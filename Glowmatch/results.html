@@ -1,0 +1,593 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>GlowMatch — Your Results</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400;1,500&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #FDF8F4;
+      --primary: #E8A598;
+      --secondary: #A8BBA2;
+      --accent: #C4614A;
+      --text: #2E2622;
+      --muted: #8C7B74;
+      --white: #FFFFFF;
+      --card-radius: 16px;
+      --pill: 100px;
+      --shadow: 0 4px 24px rgba(196,97,74,0.09), 0 1px 4px rgba(46,38,34,0.05);
+      --shadow-hover: 0 12px 40px rgba(196,97,74,0.17), 0 2px 8px rgba(46,38,34,0.08);
+    }
+
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* NAV */
+    nav {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 20px 60px;
+      background: rgba(253,248,244,0.92);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid rgba(232,165,152,0.13);
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+
+    .logo {
+      font-family: 'Cormorant Garamond', serif;
+      font-style: italic;
+      font-weight: 400;
+      font-size: 26px;
+      color: var(--accent);
+      text-decoration: none;
+    }
+
+    .retake-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--muted);
+      text-decoration: none;
+      padding: 10px 20px;
+      border-radius: var(--pill);
+      border: 1.5px solid rgba(196,97,74,0.2);
+      transition: all 0.2s;
+    }
+    .retake-btn:hover { color: var(--accent); border-color: var(--accent); }
+
+    /* PROFILE BANNER */
+    .profile-banner {
+      background: linear-gradient(135deg, #C4614A 0%, #d4755f 50%, #c9866f 100%);
+      padding: 56px 60px 48px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .profile-banner::before {
+      content: '';
+      position: absolute;
+      top: -100px; right: -100px;
+      width: 400px; height: 400px;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.07);
+    }
+
+    .profile-banner::after {
+      content: '';
+      position: absolute;
+      bottom: -60px; left: 40%;
+      width: 220px; height: 220px;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.04);
+    }
+
+    .banner-inner {
+      max-width: 1100px;
+      margin: 0 auto;
+      position: relative;
+      z-index: 2;
+    }
+
+    .banner-eyebrow {
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.65);
+      margin-bottom: 12px;
+    }
+
+    .banner-title {
+      font-family: 'Cormorant Garamond', serif;
+      font-style: italic;
+      font-weight: 400;
+      font-size: clamp(36px, 5vw, 56px);
+      color: white;
+      margin-bottom: 24px;
+      line-height: 1.1;
+    }
+
+    .profile-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+
+    .profile-tag {
+      background: rgba(168,187,162,0.9);
+      color: white;
+      font-size: 13px;
+      font-weight: 600;
+      padding: 7px 18px;
+      border-radius: var(--pill);
+      letter-spacing: 0.02em;
+      animation: tagIn 0.4s ease both;
+    }
+
+    @keyframes tagIn {
+      from { opacity: 0; transform: translateY(8px) scale(0.95); }
+      to { opacity: 1; transform: translateY(0) scale(1); }
+    }
+
+    .banner-subtitle {
+      font-size: 15px;
+      color: rgba(255,255,255,0.72);
+      margin-top: 16px;
+    }
+
+    /* CONTENT AREA */
+    .content {
+      max-width: 1140px;
+      margin: 0 auto;
+      padding: 48px 60px 80px;
+    }
+
+    /* FILTER BAR */
+    .filter-bar {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-bottom: 40px;
+      padding-bottom: 24px;
+      border-bottom: 1px solid rgba(232,165,152,0.15);
+    }
+
+    .filter-pill {
+      font-size: 13px;
+      font-weight: 500;
+      padding: 9px 20px;
+      border-radius: var(--pill);
+      border: 1.5px solid rgba(196,97,74,0.18);
+      background: transparent;
+      color: var(--muted);
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .filter-pill:hover { border-color: var(--accent); color: var(--accent); }
+
+    .filter-pill.active {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: white;
+      box-shadow: 0 2px 12px rgba(196,97,74,0.3);
+    }
+
+    /* RESULTS COUNT */
+    .results-info {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 28px;
+    }
+
+    .results-count {
+      font-size: 14px;
+      color: var(--muted);
+    }
+
+    .results-count strong {
+      color: var(--text);
+      font-weight: 600;
+    }
+
+    /* GRID */
+    .product-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 24px;
+    }
+
+    /* PRODUCT CARD */
+    .product-card {
+      background: var(--white);
+      border-radius: var(--card-radius);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      transition: transform 0.28s cubic-bezier(.4,0,.2,1), box-shadow 0.28s;
+      animation: cardFadeIn 0.5s ease both;
+    }
+
+    .product-card:hover {
+      transform: translateY(-6px);
+      box-shadow: var(--shadow-hover);
+    }
+
+    @keyframes cardFadeIn {
+      from { opacity: 0; transform: translateY(16px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .card-image-wrap {
+      width: 100%;
+      aspect-ratio: 1;
+      overflow: hidden;
+      background: #F5EDE8;
+      position: relative;
+      cursor: pointer;
+    }
+
+    .card-image-wrap img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      transition: transform 0.4s ease;
+    }
+
+    .product-card:hover .card-image-wrap img {
+      transform: scale(1.07);
+    }
+
+    .card-img-placeholder {
+      width: 100%;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 52px;
+      background: linear-gradient(135deg, #F5EDE8, #EDD9D2);
+    }
+
+    .card-body {
+      padding: 20px;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .card-brand-tag {
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--secondary);
+    }
+
+    .card-name {
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--text);
+      line-height: 1.35;
+    }
+
+    .card-match {
+      font-family: 'Cormorant Garamond', serif;
+      font-style: italic;
+      font-size: 13px;
+      color: var(--muted);
+      line-height: 1.55;
+      flex: 1;
+    }
+
+    .card-price {
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--accent);
+    }
+
+    .card-btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      background: var(--accent);
+      color: white;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 14px;
+      font-weight: 600;
+      padding: 13px 20px;
+      border-radius: var(--pill);
+      border: none;
+      cursor: pointer;
+      text-decoration: none;
+      margin: 0 20px 20px;
+      transition: all 0.2s;
+    }
+
+    .card-btn:hover {
+      background: #b8553f;
+      transform: scale(1.01);
+    }
+
+    /* NO RESULTS */
+    .no-results {
+      grid-column: 1 / -1;
+      text-align: center;
+      padding: 80px 20px;
+    }
+
+    .no-results-emoji { font-size: 48px; margin-bottom: 16px; }
+
+    .no-results h3 {
+      font-family: 'Cormorant Garamond', serif;
+      font-style: italic;
+      font-size: 28px;
+      color: var(--text);
+      margin-bottom: 8px;
+    }
+
+    .no-results p { font-size: 15px; color: var(--muted); }
+
+    /* EMPTY STATE — no session data */
+    .empty-state {
+      text-align: center;
+      padding: 120px 24px;
+      max-width: 480px;
+      margin: 0 auto;
+    }
+
+    .empty-state h2 {
+      font-family: 'Cormorant Garamond', serif;
+      font-style: italic;
+      font-size: 40px;
+      color: var(--text);
+      margin-bottom: 16px;
+    }
+
+    .empty-state p { color: var(--muted); margin-bottom: 32px; font-size: 16px; }
+
+    .btn-primary {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--accent);
+      color: white;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 15px;
+      font-weight: 600;
+      padding: 15px 36px;
+      border-radius: var(--pill);
+      border: none;
+      cursor: pointer;
+      text-decoration: none;
+      box-shadow: 0 4px 20px rgba(196,97,74,0.3);
+      transition: all 0.2s;
+    }
+    .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 28px rgba(196,97,74,0.4); }
+
+    /* FOOTER */
+    footer {
+      padding: 36px 60px;
+      border-top: 1px solid rgba(232,165,152,0.13);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    footer p { font-size: 13px; color: var(--muted); }
+
+    /* RESPONSIVE */
+    @media (max-width: 1000px) {
+      .product-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+    @media (max-width: 700px) {
+      nav { padding: 16px 20px; }
+      .profile-banner { padding: 40px 20px 36px; }
+      .content { padding: 32px 20px 60px; }
+      .product-grid { grid-template-columns: 1fr; }
+      footer { padding: 28px 20px; flex-direction: column; gap: 8px; text-align: center; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- NAV -->
+  <nav>
+    <a class="logo" href="index.html">GlowMatch</a>
+    <a class="retake-btn" href="quiz.html">↩ Retake Quiz</a>
+  </nav>
+
+  <!-- DYNAMIC CONTENT -->
+  <div id="mainContent"></div>
+
+  <!-- FOOTER -->
+  <footer>
+    <a class="logo" href="index.html">GlowMatch</a>
+    <p>© 2025 GlowMatch · Personalized K-Beauty Recommendations</p>
+  </footer>
+
+  <script>
+    const API_BASE = 'http://localhost:8080/api';
+
+    // Fallback products if API not available
+    const FALLBACK_PRODUCTS = [
+      { id: "p1", brand: "COSRX", name: "Advanced Snail 96 Mucin Power Essence", category: "Serum",
+        matchReason: "Deeply hydrates and repairs the skin barrier — perfect for dry or sensitive types.",
+        imageUrl: "", amazonUrl: "https://amazon.com", tags: ["KOREAN", "BUDGET"],
+        matchTags: ["dry", "sensitive", "hydration", "korean", "budget", "all"], price: 14 },
+      { id: "p2", brand: "Innisfree", name: "Green Tea Hyaluronic Moisturizer", category: "Moisturizer",
+        matchReason: "Lightweight gel-cream locks in moisture without clogging pores.",
+        imageUrl: "", amazonUrl: "https://amazon.com", tags: ["KOREAN", "MID-RANGE"],
+        matchTags: ["oily", "combination", "hydration", "korean", "mid", "all"], price: 34 },
+      { id: "p3", brand: "Some By Mi", name: "AHA·BHA·PHA 30 Days Miracle Toner", category: "Toner",
+        matchReason: "Gently exfoliates and clears breakouts — ideal for acne-prone and oily skin.",
+        imageUrl: "", amazonUrl: "https://amazon.com", tags: ["KOREAN", "BUDGET"],
+        matchTags: ["oily", "acne", "korean", "budget", "all"], price: 18 },
+      { id: "p4", brand: "MISSHA", name: "Time Revolution First Treatment Essence", category: "Serum",
+        matchReason: "Fermented yeast essence brightens dullness and improves texture over time.",
+        imageUrl: "", amazonUrl: "https://amazon.com", tags: ["KOREAN", "MID-RANGE"],
+        matchTags: ["dullness", "aging", "korean", "mid", "all"], price: 44 },
+      { id: "p5", brand: "CeraVe", name: "Hydrating Facial Cleanser", category: "Cleanser",
+        matchReason: "Ceramide-rich formula cleanses without stripping — perfect for dry or sensitive skin.",
+        imageUrl: "", amazonUrl: "https://amazon.com", tags: ["WESTERN", "BUDGET"],
+        matchTags: ["dry", "sensitive", "western", "budget", "all"], price: 15 },
+      { id: "p6", brand: "The Ordinary", name: "Niacinamide 10% + Zinc 1%", category: "Serum",
+        matchReason: "Controls sebum production and minimizes the appearance of pores and blemishes.",
+        imageUrl: "", amazonUrl: "https://amazon.com", tags: ["WESTERN", "BUDGET"],
+        matchTags: ["oily", "acne", "dullness", "western", "budget", "all"], price: 11 },
+      { id: "p7", brand: "Sulwhasoo", name: "First Care Activating Serum", category: "Serum",
+        matchReason: "Luxury Korean herbal serum that boosts absorption of following skincare steps.",
+        imageUrl: "", amazonUrl: "https://amazon.com", tags: ["KOREAN", "LUXURY"],
+        matchTags: ["aging", "dullness", "korean", "luxury", "all"], price: 92 },
+      { id: "p8", brand: "Purito", name: "Daily Go-To Sunscreen SPF50", category: "Sunscreen",
+        matchReason: "Lightweight, non-greasy broad spectrum SPF — no white cast for all skin tones.",
+        imageUrl: "", amazonUrl: "https://amazon.com", tags: ["KOREAN", "BUDGET"],
+        matchTags: ["oily", "combination", "sensitive", "korean", "budget", "all"], price: 16 },
+      { id: "p9", brand: "Klairs", name: "Midnight Blue Calming Cream", category: "Moisturizer",
+        matchReason: "Guaiazulene formula reduces inflammation and soothes sensitive or reactive skin overnight.",
+        imageUrl: "", amazonUrl: "https://amazon.com", tags: ["KOREAN", "MID-RANGE"],
+        matchTags: ["sensitive", "acne", "korean", "mid", "all"], price: 27 },
+    ];
+
+    const PRODUCT_EMOJIS = {
+      Cleanser: "🧴", Moisturizer: "🌿", Serum: "💧", Sunscreen: "☀️", Toner: "🌊"
+    };
+
+    let allProducts = [];
+    let activeFilter = 'All';
+
+    async function init() {
+      const stored = sessionStorage.getItem('glowmatch_result');
+
+      if (!stored) {
+        renderEmptyState();
+        return;
+      }
+
+      let result;
+      try { result = JSON.parse(stored); } catch { renderEmptyState(); return; }
+
+      // If products are empty (API was unavailable), load fallback
+      if (!result.products || result.products.length === 0) {
+        allProducts = FALLBACK_PRODUCTS;
+      } else {
+        allProducts = result.products;
+      }
+
+      renderResults(result.profileTags || [], allProducts);
+    }
+
+    function renderEmptyState() {
+      document.getElementById('mainContent').innerHTML = `
+        <div class="empty-state">
+          <div style="font-size:52px;margin-bottom:20px">🌸</div>
+          <h2>No results yet</h2>
+          <p>Take the quiz to discover your personalized skincare routine.</p>
+          <a href="quiz.html" class="btn-primary">Start Your Skin Quiz →</a>
+        </div>
+      `;
+    }
+
+    function renderResults(tags, products) {
+      const categories = ['All', ...new Set(products.map(p => p.category))].filter(Boolean);
+
+      const tagsHtml = tags.map((t, i) =>
+        `<span class="profile-tag" style="animation-delay:${0.1 + i * 0.07}s">${t}</span>`
+      ).join('');
+
+      const filtersHtml = categories.map(c =>
+        `<button class="filter-pill ${c === 'All' ? 'active' : ''}" onclick="setFilter('${c}')">${c}</button>`
+      ).join('');
+
+      document.getElementById('mainContent').innerHTML = `
+        <div class="profile-banner">
+          <div class="banner-inner">
+            <div class="banner-eyebrow">Your Skin Profile</div>
+            <h1 class="banner-title">Your perfect routine,<br>curated just for you.</h1>
+            <div class="profile-tags">${tagsHtml}</div>
+            <p class="banner-subtitle">Here are your top picks, matched to your skin.</p>
+          </div>
+        </div>
+
+        <div class="content">
+          <div class="filter-bar" id="filterBar">${filtersHtml}</div>
+          <div class="results-info">
+            <p class="results-count"><strong id="countNum">${products.length}</strong> products matched for you</p>
+          </div>
+          <div class="product-grid" id="productGrid"></div>
+        </div>
+      `;
+
+      renderGrid(products);
+    }
+
+    function setFilter(category) {
+      activeFilter = category;
+      document.querySelectorAll('.filter-pill').forEach(p => {
+        p.classList.toggle('active', p.textContent === category);
+      });
+
+      const filtered = category === 'All'
+        ? allProducts
+        : allProducts.filter(p => p.category === category);
+
+      document.getElementById('countNum').textContent = filtered.length;
+      renderGrid(filtered);
+    }
+
+    function renderGrid(products) {
+      const grid = document.getElementById('productGrid');
+
+      if (products.length === 0) {
+        grid.innerHTML = `
+          <div class="no-results">
+            <div class="no-results-emoji">🔍</div>
+            <h3>No matches in this category</h3>
+            <p>Try selecting a different filter above.</p>
+          </div>
+        `;
+        return;
+      }
+
+      grid.innerHTML = products.map((p, i) => `
+        <div class="product-card" style="animation-delay:${i * 0.06}s">
+          <div class="card-image-wrap">
+            ${p.imageUrl
+              ? `<img src="${p.imageUrl}" alt="${p.name}" loading="lazy" onerror="this.parentElement.innerHTML='<div class=\\'card-img-placeholder\\'>${PRODUCT_EMOJIS[p.category] || '🧴'}</div>'" />`
+              : `<div class="card-img-placeholder">${PRODUCT_EMOJIS[p.category] || '🧴'}</div>`
+            }
+          </div>
+          <div class="card-body">
+            <div class="card-brand-tag">${(p.tags || []).join(' · ')}</div>
+            <div class="card-name">${p.name}</div>
+            <div class="card-match">${p.matchReason}</div>
+            <div class="card-price">$${p.price?.toFixed(2) || '—'}</div>
+          </div>
+          <a href="${p.amazonUrl || 'https://amazon.com'}" target="_blank" class="card-btn">
+            🛒 View on Amazon →
+          </a>
+        </div>
+      `).join('');
+    }
+
+    init();
+  </script>
+</body>
+</html>

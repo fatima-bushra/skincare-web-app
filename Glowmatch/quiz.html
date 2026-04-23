@@ -1,0 +1,603 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>GlowMatch — Skin Quiz</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400;1,500&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #FDF8F4;
+      --primary: #E8A598;
+      --secondary: #A8BBA2;
+      --accent: #C4614A;
+      --text: #2E2622;
+      --muted: #8C7B74;
+      --white: #FFFFFF;
+      --card-radius: 16px;
+      --pill: 100px;
+      --shadow: 0 8px 40px rgba(196,97,74,0.12), 0 2px 8px rgba(46,38,34,0.07);
+    }
+
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow-x: hidden;
+    }
+
+    /* Blobs */
+    .blob {
+      position: fixed;
+      border-radius: 50%;
+      filter: blur(90px);
+      pointer-events: none;
+      z-index: 0;
+    }
+    .blob-a {
+      width: 400px; height: 400px;
+      background: rgba(232,165,152,0.22);
+      top: -80px; right: -80px;
+      animation: blobA 9s ease-in-out infinite;
+    }
+    .blob-b {
+      width: 280px; height: 280px;
+      background: rgba(168,187,162,0.20);
+      bottom: 60px; left: -60px;
+      animation: blobB 11s ease-in-out infinite;
+    }
+    @keyframes blobA {
+      0%,100% { transform: translate(0,0); }
+      50% { transform: translate(-30px, 30px); }
+    }
+    @keyframes blobB {
+      0%,100% { transform: translate(0,0); }
+      50% { transform: translate(20px,-20px); }
+    }
+
+    /* NAV */
+    nav {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 20px 40px;
+      background: rgba(253,248,244,0.88);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid rgba(232,165,152,0.13);
+      position: relative;
+      z-index: 10;
+    }
+
+    .logo {
+      font-family: 'Cormorant Garamond', serif;
+      font-style: italic;
+      font-weight: 400;
+      font-size: 26px;
+      color: var(--accent);
+      text-decoration: none;
+    }
+
+    .retake-link {
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--muted);
+      text-decoration: none;
+      transition: color 0.2s;
+    }
+    .retake-link:hover { color: var(--accent); }
+
+    /* PROGRESS */
+    .progress-wrap {
+      position: sticky;
+      top: 0;
+      z-index: 9;
+      background: rgba(253,248,244,0.95);
+      backdrop-filter: blur(8px);
+      padding: 0 0 0 0;
+    }
+
+    .progress-bar-track {
+      width: 100%;
+      height: 4px;
+      background: rgba(232,165,152,0.2);
+    }
+
+    .progress-bar-fill {
+      height: 4px;
+      background: linear-gradient(90deg, var(--primary), var(--accent));
+      border-radius: 0 2px 2px 0;
+      transition: width 0.5s cubic-bezier(.4,0,.2,1);
+    }
+
+    .progress-label {
+      text-align: right;
+      padding: 8px 40px;
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--muted);
+    }
+
+    /* MAIN */
+    main {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 48px 24px;
+      position: relative;
+      z-index: 1;
+    }
+
+    /* CARD */
+    .quiz-card {
+      background: var(--white);
+      border-radius: 24px;
+      box-shadow: var(--shadow);
+      padding: 52px 48px;
+      width: 100%;
+      max-width: 620px;
+      position: relative;
+      overflow: hidden;
+      animation: cardIn 0.4s ease forwards;
+    }
+
+    @keyframes cardIn {
+      from { opacity: 0; transform: translateY(20px) scale(0.98); }
+      to { opacity: 1; transform: translateY(0) scale(1); }
+    }
+
+    .quiz-card.exiting {
+      animation: cardOut 0.25s ease forwards;
+    }
+
+    @keyframes cardOut {
+      to { opacity: 0; transform: translateY(-16px) scale(0.98); }
+    }
+
+    .category-label {
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--secondary);
+      margin-bottom: 18px;
+    }
+
+    .quiz-question {
+      font-family: 'Cormorant Garamond', serif;
+      font-style: italic;
+      font-weight: 400;
+      font-size: clamp(26px, 4vw, 36px);
+      color: var(--text);
+      line-height: 1.25;
+      margin-bottom: 36px;
+    }
+
+    /* OPTIONS */
+    .options-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-bottom: 36px;
+    }
+
+    .option-btn {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 16px 20px;
+      border-radius: var(--pill);
+      border: 1.5px solid #F0E0D8;
+      background: var(--white);
+      cursor: pointer;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 15px;
+      font-weight: 500;
+      color: var(--text);
+      transition: all 0.2s cubic-bezier(.4,0,.2,1);
+      text-align: left;
+      min-height: 56px;
+    }
+
+    .option-btn:hover:not(.selected) {
+      border-color: var(--primary);
+      background: rgba(232,165,152,0.06);
+      transform: scale(1.02);
+    }
+
+    .option-btn.selected {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: white;
+      transform: scale(1.03);
+      box-shadow: 0 4px 16px rgba(196,97,74,0.35);
+    }
+
+    .option-emoji {
+      font-size: 20px;
+      flex-shrink: 0;
+      width: 28px;
+      text-align: center;
+    }
+
+    /* CARD FOOTER */
+    .card-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .btn-ghost {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: none;
+      border: 1.5px solid rgba(196,97,74,0.25);
+      color: var(--muted);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 14px;
+      font-weight: 500;
+      padding: 12px 24px;
+      border-radius: var(--pill);
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .btn-ghost:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    .btn-next {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--accent);
+      color: white;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 15px;
+      font-weight: 600;
+      padding: 14px 32px;
+      border-radius: var(--pill);
+      border: none;
+      cursor: pointer;
+      transition: all 0.2s;
+      box-shadow: 0 4px 16px rgba(196,97,74,0.3);
+      opacity: 0.45;
+      pointer-events: none;
+    }
+
+    .btn-next.active {
+      opacity: 1;
+      pointer-events: all;
+    }
+
+    .btn-next.active:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px rgba(196,97,74,0.4);
+    }
+
+    /* LOADING */
+    .loading-overlay {
+      position: fixed;
+      inset: 0;
+      background: var(--bg);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 24px;
+      z-index: 100;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.4s;
+    }
+
+    .loading-overlay.visible {
+      opacity: 1;
+      pointer-events: all;
+    }
+
+    .loading-logo {
+      font-family: 'Cormorant Garamond', serif;
+      font-style: italic;
+      font-size: 40px;
+      color: var(--accent);
+    }
+
+    .loading-text {
+      font-size: 16px;
+      color: var(--muted);
+    }
+
+    .loading-dots {
+      display: flex;
+      gap: 8px;
+    }
+
+    .loading-dots span {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: var(--accent);
+      animation: dotBounce 1.2s ease-in-out infinite;
+    }
+
+    .loading-dots span:nth-child(2) { animation-delay: 0.2s; }
+    .loading-dots span:nth-child(3) { animation-delay: 0.4s; }
+
+    @keyframes dotBounce {
+      0%, 80%, 100% { transform: scale(0.6); opacity: 0.4; }
+      40% { transform: scale(1); opacity: 1; }
+    }
+
+    /* MOBILE */
+    @media (max-width: 600px) {
+      nav { padding: 16px 20px; }
+      .progress-label { padding: 8px 20px; }
+      .quiz-card { padding: 36px 24px; }
+      .options-grid { grid-template-columns: 1fr; }
+      .card-footer { flex-direction: column-reverse; }
+      .btn-next, .btn-ghost { width: 100%; justify-content: center; }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="blob blob-a"></div>
+  <div class="blob blob-b"></div>
+
+  <!-- LOADING OVERLAY -->
+  <div class="loading-overlay" id="loadingOverlay">
+    <div class="loading-logo">GlowMatch</div>
+    <div class="loading-text">Analyzing your skin profile…</div>
+    <div class="loading-dots">
+      <span></span><span></span><span></span>
+    </div>
+  </div>
+
+  <!-- NAV -->
+  <nav>
+    <a class="logo" href="index.html">GlowMatch</a>
+    <a class="retake-link" href="index.html">← Back to Home</a>
+  </nav>
+
+  <!-- PROGRESS -->
+  <div class="progress-wrap">
+    <div class="progress-bar-track">
+      <div class="progress-bar-fill" id="progressFill" style="width: 0%"></div>
+    </div>
+    <div class="progress-label" id="progressLabel">Step 1 of 8</div>
+  </div>
+
+  <!-- MAIN QUIZ AREA -->
+  <main>
+    <div class="quiz-card" id="quizCard">
+      <div class="category-label" id="categoryLabel">SKIN TYPE</div>
+      <h2 class="quiz-question" id="questionText">Loading quiz…</h2>
+
+      <div class="options-grid" id="optionsGrid"></div>
+
+      <div class="card-footer">
+        <button class="btn-ghost" id="backBtn" onclick="goBack()">← Back</button>
+        <button class="btn-next" id="nextBtn" onclick="goNext()">Next →</button>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    const API_BASE = 'http://localhost:8080/api';
+
+    let questions = [];
+    let currentIndex = 0;
+    let answers = {}; // questionId -> optionId
+
+    // Fallback questions in case API is unreachable
+    const FALLBACK_QUESTIONS = [
+      { id: 1, category: "SKIN TYPE", question: "How does your skin usually feel by midday?", options: [
+        { id: "oily", emoji: "🫧", label: "Oily" },
+        { id: "dry", emoji: "🏜️", label: "Dry" },
+        { id: "combination", emoji: "🌗", label: "Combination" },
+        { id: "sensitive", emoji: "🌸", label: "Sensitive" }
+      ]},
+      { id: 2, category: "SKIN CONCERN", question: "What's your biggest skin concern right now?", options: [
+        { id: "acne", emoji: "🔴", label: "Acne & Breakouts" },
+        { id: "aging", emoji: "⏳", label: "Fine Lines & Aging" },
+        { id: "dullness", emoji: "✨", label: "Dullness & Uneven Tone" },
+        { id: "hydration", emoji: "💧", label: "Dehydration & Dryness" }
+      ]},
+      { id: 3, category: "BRAND PREFERENCE", question: "Which type of skincare brands do you prefer?", options: [
+        { id: "korean", emoji: "🇰🇷", label: "Korean Beauty" },
+        { id: "western", emoji: "🌎", label: "Western Brands" },
+        { id: "natural", emoji: "🌿", label: "Natural & Organic" },
+        { id: "any", emoji: "🌈", label: "No Preference" }
+      ]},
+      { id: 4, category: "BUDGET", question: "What's your typical budget per skincare product?", options: [
+        { id: "budget", emoji: "💚", label: "Under $20" },
+        { id: "mid", emoji: "💛", label: "$20 – $50" },
+        { id: "luxury", emoji: "💎", label: "$50+" },
+        { id: "any", emoji: "🤷", label: "No Preference" }
+      ]},
+      { id: 5, category: "ROUTINE", question: "How complex is your ideal skincare routine?", options: [
+        { id: "minimal", emoji: "⚡", label: "Minimal (2–3 steps)" },
+        { id: "moderate", emoji: "🌙", label: "Moderate (4–6 steps)" },
+        { id: "full", emoji: "🌟", label: "Full Routine (7+ steps)" },
+        { id: "unsure", emoji: "🤔", label: "Still Figuring It Out" }
+      ]},
+      { id: 6, category: "CLIMATE", question: "What's the climate like where you live?", options: [
+        { id: "humid", emoji: "🌴", label: "Hot & Humid" },
+        { id: "dry", emoji: "☀️", label: "Hot & Dry" },
+        { id: "cold", emoji: "❄️", label: "Cold & Dry" },
+        { id: "mixed", emoji: "🌤️", label: "Mixed / Seasonal" }
+      ]},
+      { id: 7, category: "AGE RANGE", question: "Which age range are you in?", options: [
+        { id: "teens", emoji: "🌱", label: "Under 20" },
+        { id: "twenties", emoji: "🌸", label: "20s" },
+        { id: "thirties", emoji: "🌺", label: "30s" },
+        { id: "40plus", emoji: "🌹", label: "40s & above" }
+      ]},
+      { id: 8, category: "FRAGRANCE", question: "How do you feel about fragrance in skincare?", options: [
+        { id: "fragrance_free", emoji: "🚫", label: "Fragrance-Free Only" },
+        { id: "light", emoji: "🌸", label: "Light Fragrance is Fine" },
+        { id: "love", emoji: "🌷", label: "Love Scented Products" },
+        { id: "no_pref", emoji: "😊", label: "No Preference" }
+      ]}
+    ];
+
+    async function loadQuestions() {
+      try {
+        const res = await fetch(`${API_BASE}/questions`);
+        if (!res.ok) throw new Error('API unavailable');
+        questions = await res.json();
+      } catch (e) {
+        console.warn('Using fallback questions (API not available):', e.message);
+        questions = FALLBACK_QUESTIONS;
+      }
+      renderQuestion();
+    }
+
+    function renderQuestion() {
+      const q = questions[currentIndex];
+      const total = questions.length;
+
+      // Progress
+      const pct = ((currentIndex) / total) * 100;
+      document.getElementById('progressFill').style.width = pct + '%';
+      document.getElementById('progressLabel').textContent = `Step ${currentIndex + 1} of ${total}`;
+
+      // Content
+      document.getElementById('categoryLabel').textContent = q.category;
+      document.getElementById('questionText').textContent = q.question;
+
+      // Back button
+      document.getElementById('backBtn').style.visibility = currentIndex === 0 ? 'hidden' : 'visible';
+
+      // Options
+      const grid = document.getElementById('optionsGrid');
+      grid.innerHTML = '';
+      q.options.forEach(opt => {
+        const btn = document.createElement('button');
+        btn.className = 'option-btn' + (answers[q.id] === opt.id ? ' selected' : '');
+        btn.innerHTML = `<span class="option-emoji">${opt.emoji}</span><span>${opt.label}</span>`;
+        btn.onclick = () => selectOption(q.id, opt.id, btn);
+        grid.appendChild(btn);
+      });
+
+      updateNextBtn();
+    }
+
+    function selectOption(questionId, optionId, btnEl) {
+      answers[questionId] = optionId;
+      document.querySelectorAll('.option-btn').forEach(b => b.classList.remove('selected'));
+      btnEl.classList.add('selected');
+      updateNextBtn();
+    }
+
+    function updateNextBtn() {
+      const q = questions[currentIndex];
+      const hasAnswer = !!answers[q.id];
+      const nextBtn = document.getElementById('nextBtn');
+      nextBtn.classList.toggle('active', hasAnswer);
+      const isLast = currentIndex === questions.length - 1;
+      nextBtn.textContent = isLast ? 'See My Results ✨' : 'Next →';
+    }
+
+    function animateCard(direction, cb) {
+      const card = document.getElementById('quizCard');
+      card.style.transition = 'opacity 0.2s, transform 0.2s';
+      card.style.opacity = '0';
+      card.style.transform = direction === 'forward' ? 'translateY(-12px)' : 'translateY(12px)';
+      setTimeout(() => {
+        cb();
+        card.style.opacity = '0';
+        card.style.transform = direction === 'forward' ? 'translateY(16px)' : 'translateY(-16px)';
+        setTimeout(() => {
+          card.style.transition = 'opacity 0.3s, transform 0.3s';
+          card.style.opacity = '1';
+          card.style.transform = 'translateY(0)';
+        }, 30);
+      }, 180);
+    }
+
+    function goNext() {
+      const q = questions[currentIndex];
+      if (!answers[q.id]) return;
+
+      if (currentIndex < questions.length - 1) {
+        animateCard('forward', () => {
+          currentIndex++;
+          renderQuestion();
+        });
+      } else {
+        submitQuiz();
+      }
+    }
+
+    function goBack() {
+      if (currentIndex > 0) {
+        animateCard('back', () => {
+          currentIndex--;
+          renderQuestion();
+        });
+      }
+    }
+
+    async function submitQuiz() {
+      document.getElementById('loadingOverlay').classList.add('visible');
+
+      // Build payload
+      const payload = { answers };
+
+      try {
+        const res = await fetch(`${API_BASE}/submit`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+
+        if (!res.ok) throw new Error('Submit failed');
+        const result = await res.json();
+        sessionStorage.setItem('glowmatch_result', JSON.stringify(result));
+      } catch (e) {
+        console.warn('API submit failed, using client-side fallback:', e.message);
+        // Client-side fallback matching
+        const result = clientSideMatch(answers);
+        sessionStorage.setItem('glowmatch_result', JSON.stringify(result));
+      }
+
+      setTimeout(() => {
+        window.location.href = 'results.html';
+      }, 1800);
+    }
+
+    function clientSideMatch(answers) {
+      const tags = [];
+      const skinMap = { oily: 'Oily Skin', dry: 'Dry Skin', combination: 'Combination Skin', sensitive: 'Sensitive Skin' };
+      const concernMap = { acne: 'Acne-Prone', aging: 'Anti-Aging', dullness: 'Brightening', hydration: 'Dehydrated' };
+      const budgetMap = { budget: 'Budget-Friendly', mid: 'Mid-Range', luxury: 'Luxury', any: 'All Budgets' };
+      const brandMap = { korean: 'Korean Brands', western: 'Western Brands', natural: 'Natural/Organic', any: 'All Brands' };
+
+      if (skinMap[answers[1]]) tags.push(skinMap[answers[1]]);
+      if (concernMap[answers[2]]) tags.push(concernMap[answers[2]]);
+      if (brandMap[answers[3]]) tags.push(brandMap[answers[3]]);
+      if (budgetMap[answers[4]]) tags.push(budgetMap[answers[4]]);
+
+      return { profileTags: tags, products: [] };
+    }
+
+    // Keyboard support
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') goNext();
+      if (e.key === 'ArrowLeft') goBack();
+    });
+
+    loadQuestions();
+  </script>
+</body>
+</html>
